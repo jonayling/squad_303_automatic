@@ -1,6 +1,5 @@
 import random
 import requests
-from twilio.rest import Client
 from config import Config
 
 class Messager:
@@ -14,25 +13,15 @@ class Messager:
         'Ваши СМИ подвергаются цензуре. Кремль лжет. Ищите правду о войне в Украине в TOR:  https://www.bbcnewsd73hkzno2ini43t4gblxvycyac5aw4gnv7t2rccijh7745uqd.onion/russian или используйте приложение Psiphon.'
     ]
 
-    def __init__(self):
-        self.sms_client = Client(username=Config.account_sid, password=Config.auth_token)
+    def __init__(self, sms_service):
+        self.sms_service = sms_service
 
     def get_russian_number(self):
-        headers = {
-            'User-Agent': self.USER_AGENT
-        }
-        response = requests.get(Config.RUSSIAN_NUMBER_API, headers=headers, cookies=Config.COOKIE)
+        response = requests.get(Config.RUSSIAN_NUMBER_API)
         if response.status_code == 200:
             return response.text
         else:
             print('Failed to fetch number!')
-
-    def send_sms(self, message, number):
-        self.sms_client.messages.create(
-            body=message,
-            from_=Config.SMS_NUMBER,
-            to=number
-        )
 
     def run(self):
         russian_number = self.get_russian_number()
@@ -40,5 +29,8 @@ class Messager:
         if russian_number:
             russian_number = '+' + russian_number
             print(f'Sending message to {russian_number}...', end='')
-            self.send_sms(message, russian_number)
-            print('done')
+            result = self.sms_service.send_sms(message, russian_number)
+            if result:
+                print('done')
+            else:
+                print('Error!')
